@@ -88,6 +88,8 @@ export interface Match {
   completed_at: string | null;
   score_a: number | null;
   score_b: number | null;
+  ready_a_id: string | null;
+  ready_b_id: string | null;
 }
 
 export interface EventPhoto {

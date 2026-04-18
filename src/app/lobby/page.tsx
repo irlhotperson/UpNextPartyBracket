@@ -72,20 +72,48 @@ function getMatchStatus(
         bgColor: "border-arcade-red bg-arcade-red/10",
         showReport: false,
       };
-    default:
+    default: {
+      // Pending — check ready state
+      const isPlayerA = match.player_a_id === playerId;
+      const myReady = isPlayerA ? match.ready_a_id : match.ready_b_id;
+      const bothAssigned = match.player_a_id && match.player_b_id;
+
+      if (myReady) {
+        return {
+          text: `WAITING FOR ${opponentName}...`,
+          subtext: `at ${stationLabel || "match"}`,
+          color: "text-arcade-cyan",
+          bgColor: "border-arcade-cyan bg-arcade-cyan/10",
+          showReport: false,
+          showReady: false,
+        };
+      }
+      if (bothAssigned) {
+        return {
+          text: `Match ready at ${stationLabel || "station"}`,
+          subtext: `vs ${opponentName}`,
+          color: "text-arcade-yellow",
+          bgColor: "border-arcade-yellow bg-arcade-yellow/5",
+          showReport: false,
+          showReady: true,
+        };
+      }
       return {
         text: `Queued for ${stationLabel || "match"}`,
         subtext: `vs ${opponentName}`,
         color: "text-arcade-border",
         bgColor: "border-arcade-border bg-arcade-navy",
         showReport: false,
+        showReady: false,
       };
+    }
   }
 }
 
 export default function LobbyPage() {
   const [data, setData] = useState<LobbyData | null>(null);
   const [reporting, setReporting] = useState<string | null>(null);
+  const [readyingUp, setReadyingUp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCamera, setShowCamera] = useState(false);
 
@@ -96,6 +124,13 @@ export default function LobbyPage() {
     }
     setLoading(false);
   }, []);
+
+  async function readyUp(matchId: string) {
+    setReadyingUp(matchId);
+    await fetch(`/api/matches/${matchId}/ready`, { method: "POST" });
+    setReadyingUp(null);
+    fetchData();
+  }
 
   async function handleCameraCapture(file: File) {
     setShowCamera(false);
@@ -304,6 +339,17 @@ export default function LobbyPage() {
                           CANCEL
                         </button>
                       </div>
+                    )}
+
+                    {/* Ready up */}
+                    {"showReady" in status && status.showReady && (
+                      <button
+                        onClick={() => readyUp(match.id)}
+                        disabled={readyingUp === match.id}
+                        className="mt-2 w-full border-2 border-arcade-green bg-arcade-green/20 px-3 py-2.5 font-heading text-xs text-arcade-green hover:bg-arcade-green/40 disabled:opacity-40 pixel-text arcade-flash"
+                      >
+                        {readyingUp === match.id ? "READYING..." : "READY"}
+                      </button>
                     )}
 
                     {/* Confirm / Dispute */}

@@ -206,6 +206,9 @@ export default function AdminRunDashboard({
         <div className="flex items-center justify-between text-xs">
           <span className="pixel-text font-heading text-[10px] text-foreground">
             {pA ? `${pA.avatar_emoji} ${pA.display_name}` : "TBD"}
+            {match.status === "pending" && match.ready_a_id && (
+              <span className="text-arcade-green text-[8px] ml-1">READY</span>
+            )}
             {busyA && busyA !== stationLabel && (
               <span className="text-arcade-orange ml-1">(@ {busyA})</span>
             )}
@@ -215,6 +218,9 @@ export default function AdminRunDashboard({
           </span>
           <span className="pixel-text font-heading text-[10px] text-foreground">
             {pB ? `${pB.avatar_emoji} ${pB.display_name}` : "TBD"}
+            {match.status === "pending" && match.ready_b_id && (
+              <span className="text-arcade-green text-[8px] ml-1">READY</span>
+            )}
             {busyB && busyB !== stationLabel && (
               <span className="text-arcade-orange ml-1">(@ {busyB})</span>
             )}
