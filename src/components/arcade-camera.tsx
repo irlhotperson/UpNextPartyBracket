@@ -11,18 +11,24 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const capturedBlobRef = useRef<Blob | null>(null);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
-  const [captured, setCaptured] = useState<string | null>(null);
+  const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
   const [flashing, setFlashing] = useState(false);
   const [cameraError, setCameraError] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [started, setStarted] = useState(false);
   const fallbackInputRef = useRef<HTMLInputElement>(null);
 
-  const startCamera = useCallback(async (facing: "user" | "environment") => {
+  const stopStream = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
+  }, []);
+
+  const startCamera = useCallback(async (facing: "user" | "environment") => {
+    stopStream();
     setCameraReady(false);
 
     try {
@@ -33,21 +39,16 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
       }
       setStarted(true);
     } catch {
       setCameraError(true);
     }
-  }, []);
+  }, [stopStream]);
 
   useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-    };
-  }, []);
+    return stopStream;
+  }, [stopStream]);
 
   function handleStartCamera() {
     startCamera(facingMode);
@@ -59,57 +60,62 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
     startCamera(newMode);
   }
 
-  function handleVideoReady() {
+  // Use the 'playing' event — fires after the first frame is actually rendered
+  function handleVideoPlaying() {
     setCameraReady(true);
   }
 
   function handleSnap() {
-    if (!videoRef.current || !canvasRef.current) return;
-
     const video = videoRef.current;
-
-    // Guard: don't snap if video has no dimensions yet
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
     if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
-    // Flash
-    setFlashing(true);
-    setTimeout(() => setFlashing(false), 150);
+    // Use requestAnimationFrame to ensure we're on a painted frame
+    requestAnimationFrame(() => {
+      const size = Math.min(video.videoWidth, video.videoHeight);
+      const offsetX = (video.videoWidth - size) / 2;
+      const offsetY = (video.videoHeight - size) / 2;
 
-    const canvas = canvasRef.current;
-    const size = Math.min(video.videoWidth, video.videoHeight);
-    const offsetX = (video.videoWidth - size) / 2;
-    const offsetY = (video.videoHeight - size) / 2;
+      canvas.width = 400;
+      canvas.height = 400;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, 400, 400);
 
-    canvas.width = 400;
-    canvas.height = 400;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, 400, 400);
+      // Convert to blob immediately while the canvas is hot
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            capturedBlobRef.current = blob;
+            const url = URL.createObjectURL(blob);
+            setCapturedUrl(url);
+          }
+        },
+        "image/jpeg",
+        0.8
+      );
 
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-    setCaptured(dataUrl);
+      // Flash
+      setFlashing(true);
+      setTimeout(() => setFlashing(false), 150);
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-    }
+      // Stop camera
+      stopStream();
+    });
   }
 
   function handleRetake() {
-    setCaptured(null);
+    if (capturedUrl) URL.revokeObjectURL(capturedUrl);
+    setCapturedUrl(null);
+    capturedBlobRef.current = null;
     startCamera(facingMode);
   }
 
   function handleUse() {
-    if (!canvasRef.current) return;
-    canvasRef.current.toBlob(
-      (blob) => {
-        if (blob) {
-          const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-          onCapture(file);
-        }
-      },
-      "image/jpeg",
-      0.8
-    );
+    const blob = capturedBlobRef.current;
+    if (!blob) return;
+    const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+    onCapture(file);
   }
 
   function handleFallbackFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -152,7 +158,7 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   }
 
   // Review captured photo
-  if (captured) {
+  if (capturedUrl) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-arcade-dark">
         <div
@@ -172,7 +178,7 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={captured}
+            src={capturedUrl}
             alt="Captured"
             className="w-64 h-64 sm:w-80 sm:h-80 object-cover"
           />
@@ -198,7 +204,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
         </div>
 
         <div className="scanlines" />
-        <canvas ref={canvasRef} className="hidden" />
       </div>
     );
   }
@@ -206,13 +211,13 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   // Camera view
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
-      {/* Video feed — always in DOM so ref works */}
+      {/* Video feed */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        onLoadedData={handleVideoReady}
+        onPlaying={handleVideoPlaying}
         className={`absolute inset-0 w-full h-full object-cover ${started ? "" : "invisible"}`}
         style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
       />
@@ -251,7 +256,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
                 "0 0 20px rgba(255,215,0,0.2), inset 0 0 20px rgba(0,0,0,0.3)",
             }}
           >
-            {/* Magenta corner brackets */}
             <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-arcade-magenta" />
             <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-arcade-magenta" />
             <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-arcade-magenta" />
@@ -283,7 +287,7 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
         </button>
       )}
 
-      {/* Start camera button — shown before stream starts */}
+      {/* Start camera button */}
       {!started && (
         <button
           onClick={handleStartCamera}
@@ -296,7 +300,7 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
         </button>
       )}
 
-      {/* SNAP button — only when camera is ready */}
+      {/* SNAP button */}
       {cameraReady && (
         <div className="absolute bottom-12 left-0 right-0 flex justify-center z-20">
           <button
@@ -314,6 +318,7 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
 
       {/* Scanlines */}
       <div className="scanlines" />
+      {/* Canvas always in DOM, hidden */}
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
