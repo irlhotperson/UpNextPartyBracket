@@ -187,6 +187,17 @@ export default function PartyManagePage({
     fetchData();
   }
 
+  async function addAllPlayers(eventId: string) {
+    const res = await fetch(`/api/events/${eventId}/add-all-players`, {
+      method: "POST",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Added ${data.added} player${data.added !== 1 ? "s" : ""}`);
+    }
+    fetchData();
+  }
+
   async function endEvent(eventId: string) {
     await fetch(`/api/events/${eventId}`, {
       method: "PATCH",
@@ -519,6 +530,12 @@ export default function PartyManagePage({
                   <div className="flex flex-wrap gap-2 mt-3">
                     {event.status === "setup" && (
                       <>
+                        <button
+                          onClick={() => addAllPlayers(event.id)}
+                          className="border border-arcade-yellow bg-arcade-yellow/10 px-3 py-1 font-heading text-[10px] text-arcade-yellow hover:bg-arcade-yellow/30 pixel-text"
+                        >
+                          ADD ALL PLAYERS
+                        </button>
                         <button
                           onClick={() => startEditing(event)}
                           className="border border-arcade-cyan bg-arcade-cyan/10 px-3 py-1 font-heading text-[10px] text-arcade-cyan hover:bg-arcade-cyan/30 pixel-text"
