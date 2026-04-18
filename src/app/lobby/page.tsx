@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import imageCompression from "browser-image-compression";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { ArcadeCamera } from "@/components/arcade-camera";
 import type { Player, Match, Badge, EventEntry, Event } from "@/lib/types";
 
 interface LobbyData {
@@ -85,7 +86,7 @@ export default function LobbyPage() {
   const [data, setData] = useState<LobbyData | null>(null);
   const [reporting, setReporting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/players/lobby");
@@ -95,9 +96,9 @@ export default function LobbyPage() {
     setLoading(false);
   }, []);
 
-  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !data) return;
+  async function handleCameraCapture(file: File) {
+    setShowCamera(false);
+    if (!data) return;
     try {
       const compressed = await imageCompression(file, {
         maxWidthOrHeight: 400,
@@ -115,7 +116,6 @@ export default function LobbyPage() {
     } catch {
       // ignore
     }
-    if (photoInputRef.current) photoInputRef.current.value = "";
   }
 
   useEffect(() => {
@@ -176,15 +176,15 @@ export default function LobbyPage() {
   return (
     <div className="flex flex-1 flex-col bg-arcade-dark px-4 py-6">
       <div className="max-w-sm mx-auto w-full">
+        {/* Camera overlay */}
+        {showCamera && (
+          <ArcadeCamera
+            onCapture={handleCameraCapture}
+            onCancel={() => setShowCamera(false)}
+          />
+        )}
+
         {/* Player header */}
-        <input
-          ref={photoInputRef}
-          type="file"
-          accept="image/*"
-          capture="user"
-          onChange={handlePhotoChange}
-          className="hidden"
-        />
         <div className="text-center mb-6">
           <div className="flex justify-center mb-2">
             <PlayerAvatar
@@ -192,7 +192,7 @@ export default function LobbyPage() {
               photoUrl={player.avatar_photo_url}
               name={player.display_name}
               size={80}
-              onClick={() => photoInputRef.current?.click()}
+              onClick={() => setShowCamera(true)}
               className="cursor-pointer"
             />
           </div>

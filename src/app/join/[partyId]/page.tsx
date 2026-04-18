@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { ArcadeCamera } from "@/components/arcade-camera";
 import type { Party, Event } from "@/lib/types";
 
 const AVATAR_EMOJIS = [
@@ -33,7 +34,7 @@ export default function JoinPage({
   const [submitting, setSubmitting] = useState(false);
   const [showReady, setShowReady] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
     fetch("/api/players").then(async (res) => {
@@ -63,10 +64,8 @@ export default function JoinPage({
     );
   }
 
-  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  async function handleCameraCapture(file: File) {
+    setShowCamera(false);
     try {
       const compressed = await imageCompression(file, {
         maxWidthOrHeight: 400,
@@ -77,7 +76,6 @@ export default function JoinPage({
       setPhotoFile(compressed);
       setPhotoPreview(URL.createObjectURL(compressed));
     } catch {
-      // Fallback: use original
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
     }
@@ -268,6 +266,14 @@ export default function JoinPage({
           </div>
         )}
 
+        {/* Arcade Camera overlay */}
+        {showCamera && (
+          <ArcadeCamera
+            onCapture={handleCameraCapture}
+            onCancel={() => setShowCamera(false)}
+          />
+        )}
+
         {/* Step 3: Photo (optional) */}
         {step === "photo" && (
           <div className="flex flex-col gap-4">
@@ -302,18 +308,9 @@ export default function JoinPage({
               )}
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="user"
-              onChange={handlePhotoSelect}
-              className="hidden"
-            />
-
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowCamera(true)}
                 className="border-2 border-arcade-cyan bg-arcade-cyan/20 px-4 py-3 font-heading text-xs text-arcade-cyan hover:bg-arcade-cyan/40 pixel-text"
               >
                 {photoPreview ? "RETAKE PHOTO" : "TAKE PHOTO"}
