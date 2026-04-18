@@ -164,11 +164,34 @@ export default function PartyManagePage({
     fetchData();
   }
 
-  async function updateEventStatus(eventId: string, status: string) {
+  async function startEvent(event: Event) {
+    // Call format-specific endpoint to generate matches AND set status
+    const urls: Record<string, string> = {
+      single_elim: `/api/events/${event.id}/bracket`,
+      boss_mode: `/api/events/${event.id}/boss`,
+      hot_streak: `/api/events/${event.id}/hotstreak`,
+      best_score: `/api/events/${event.id}/bestscore`,
+    };
+    const url = urls[event.format];
+    if (!url) return;
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "start" }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || "Failed to start event");
+    }
+    fetchData();
+  }
+
+  async function endEvent(eventId: string) {
     await fetch(`/api/events/${eventId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: "completed" }),
     });
     fetchData();
   }
@@ -503,7 +526,7 @@ export default function PartyManagePage({
                           EDIT
                         </button>
                         <button
-                          onClick={() => updateEventStatus(event.id, "active")}
+                          onClick={() => startEvent(event)}
                           className="border border-arcade-green bg-arcade-green/10 px-3 py-1 font-heading text-[10px] text-arcade-green hover:bg-arcade-green/30 pixel-text"
                         >
                           START
@@ -512,7 +535,7 @@ export default function PartyManagePage({
                     )}
                     {event.status === "active" && (
                       <button
-                        onClick={() => updateEventStatus(event.id, "completed")}
+                        onClick={() => endEvent(event.id)}
                         className="border border-arcade-magenta bg-arcade-magenta/10 px-3 py-1 font-heading text-[10px] text-arcade-magenta hover:bg-arcade-magenta/30 pixel-text"
                       >
                         END EVENT
