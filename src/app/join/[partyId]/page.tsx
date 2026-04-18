@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -35,6 +35,7 @@ export default function JoinPage({
   const [showReady, setShowReady] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/players").then(async (res) => {
@@ -79,6 +80,25 @@ export default function JoinPage({
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
     }
+  }
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await imageCompression(file, {
+        maxWidthOrHeight: 400,
+        maxSizeMB: 0.1,
+        fileType: "image/jpeg",
+        useWebWorker: true,
+      });
+      setPhotoFile(compressed);
+      setPhotoPreview(URL.createObjectURL(compressed));
+    } catch {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleSubmit() {
@@ -308,12 +328,27 @@ export default function JoinPage({
               )}
             </div>
 
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              onChange={handlePhotoSelect}
+              className="hidden"
+            />
+
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => setShowCamera(true)}
                 className="border-2 border-arcade-cyan bg-arcade-cyan/20 px-4 py-3 font-heading text-xs text-arcade-cyan hover:bg-arcade-cyan/40 pixel-text"
               >
                 {photoPreview ? "RETAKE PHOTO" : "TAKE PHOTO"}
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="border border-arcade-border px-4 py-2 font-heading text-[10px] text-arcade-border hover:text-foreground pixel-text"
+              >
+                UPLOAD FROM LIBRARY
               </button>
             </div>
 
