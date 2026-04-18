@@ -40,7 +40,6 @@ export interface Event {
 }
 
 export interface SingleElimConfig {
-  bracket_size: number;
   best_of: 1 | 3 | 5;
   allow_late_entry: boolean;
 }

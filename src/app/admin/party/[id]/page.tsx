@@ -19,7 +19,7 @@ const FORMAT_COLORS: Record<EventFormat, string> = {
 };
 
 const DEFAULT_CONFIGS: Record<EventFormat, object> = {
-  single_elim: { bracket_size: 8, best_of: 1, allow_late_entry: true },
+  single_elim: { best_of: 1, allow_late_entry: true },
   boss_mode: {
     boss_player_id: "",
     win_threshold_pct: 51,
