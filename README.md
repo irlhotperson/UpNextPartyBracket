@@ -25,9 +25,12 @@ pnpm install
 ### 2. Supabase Project
 
 1. Create a new project at [supabase.com](https://supabase.com)
-2. Run the migration files in `supabase/migrations/` against your database
-3. Create a public storage bucket called `event-photos`
-4. Copy your project URL, anon key, and service role key
+2. Go to the **SQL Editor** in your Supabase dashboard
+3. Run `supabase/migrations/00001_create_schema.sql` to create all tables and enums
+4. Optionally run `supabase/seed.sql` to insert sample data (1 party, 3 events, 8 players)
+5. Go to **Storage** and create a public bucket called `event-photos`
+6. In bucket settings, set the bucket to **Public** (no RLS policies needed for v1)
+7. Copy your project URL, anon key, and service role key from **Settings > API**
 
 ### 3. Environment Variables
 
