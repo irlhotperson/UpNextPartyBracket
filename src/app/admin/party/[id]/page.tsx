@@ -164,6 +164,12 @@ export default function PartyManagePage({
             RUN DASHBOARD
           </Link>
           <Link
+            href={`/admin/party/${partyId}/photos`}
+            className="border border-arcade-yellow bg-arcade-yellow/10 px-3 py-1 font-heading text-[10px] text-arcade-yellow hover:bg-arcade-yellow/30 pixel-text"
+          >
+            PHOTOS
+          </Link>
+          <Link
             href={`/display/party/${partyId}`}
             className="border border-arcade-magenta bg-arcade-magenta/10 px-3 py-1 font-heading text-[10px] text-arcade-magenta hover:bg-arcade-magenta/30 pixel-text"
           >
