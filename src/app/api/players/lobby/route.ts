@@ -53,13 +53,13 @@ export async function GET() {
   if (playerIds.size > 0) {
     const { data: opponentData } = await supabase
       .from("players")
-      .select("id, display_name, avatar_emoji")
+      .select("id, display_name, avatar_emoji, avatar_photo_url")
       .in("id", Array.from(playerIds));
     if (opponentData) {
       opponents = Object.fromEntries(
         opponentData.map((p) => [
           p.id,
-          { display_name: p.display_name, avatar_emoji: p.avatar_emoji },
+          { display_name: p.display_name, avatar_emoji: p.avatar_emoji, avatar_photo_url: p.avatar_photo_url },
         ])
       );
     }

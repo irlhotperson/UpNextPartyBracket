@@ -17,7 +17,7 @@ export async function GET(
   // Get all players in the party
   const { data: players } = await supabase
     .from("players")
-    .select("id, display_name, avatar_emoji")
+    .select("id, display_name, avatar_emoji, avatar_photo_url")
     .eq("party_id", partyId);
 
   if (!players) return Response.json({ standings: [] });

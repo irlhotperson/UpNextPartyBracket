@@ -9,7 +9,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("players")
-    .select("id, display_name, avatar_emoji")
+    .select("id, display_name, avatar_emoji, avatar_photo_url")
     .eq("party_id", partyId)
     .order("joined_at");
 

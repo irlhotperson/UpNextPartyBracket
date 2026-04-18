@@ -1,10 +1,17 @@
 "use client";
 
 import type { Match } from "@/lib/types";
+import { PlayerAvatar } from "./player-avatar";
+
+interface PlayerInfo {
+  display_name: string;
+  avatar_emoji: string;
+  avatar_photo_url?: string | null;
+}
 
 interface BracketViewProps {
   matches: Match[];
-  players: Record<string, { display_name: string; avatar_emoji: string }>;
+  players: Record<string, PlayerInfo>;
   compact?: boolean;
 }
 
@@ -15,11 +22,12 @@ function PlayerSlot({
   compact,
 }: {
   playerId: string | null;
-  players: Record<string, { display_name: string; avatar_emoji: string }>;
+  players: Record<string, PlayerInfo>;
   isWinner: boolean;
   compact?: boolean;
 }) {
   const player = playerId ? players[playerId] : null;
+  const avatarSize = compact ? 20 : 28;
 
   return (
     <div
@@ -35,9 +43,12 @@ function PlayerSlot({
     >
       {player ? (
         <>
-          <span className={compact ? "text-sm" : "text-base"}>
-            {player.avatar_emoji}
-          </span>
+          <PlayerAvatar
+            emoji={player.avatar_emoji}
+            photoUrl={player.avatar_photo_url}
+            name={player.display_name}
+            size={avatarSize}
+          />
           <span
             className={`pixel-text font-heading truncate ${
               compact ? "text-[8px]" : "text-[10px]"

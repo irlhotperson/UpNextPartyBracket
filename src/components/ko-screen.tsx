@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { PlayerAvatar } from "./player-avatar";
 
 interface KOScreenProps {
-  winner: { display_name: string; avatar_emoji: string } | null;
+  winner: { display_name: string; avatar_emoji: string; avatar_photo_url?: string | null } | null;
   type: "ko" | "boss_defeated" | "qualified";
   onDismiss: () => void;
 }
@@ -60,15 +61,17 @@ export function KOScreen({ winner, type, onDismiss }: KOScreenProps) {
 
       <div className="relative z-10 text-center screen-shake">
         {/* Winner avatar */}
-        <p
-          className="text-9xl mb-6"
-          style={{
-            filter: `drop-shadow(0 0 30px ${glowColor})`,
-            imageRendering: "pixelated",
-          }}
+        <div
+          className="mb-6 flex justify-center"
+          style={{ filter: `drop-shadow(0 0 30px ${glowColor})` }}
         >
-          {winner?.avatar_emoji || "🏆"}
-        </p>
+          <PlayerAvatar
+            emoji={winner?.avatar_emoji || "🏆"}
+            photoUrl={winner?.avatar_photo_url}
+            name={winner?.display_name}
+            size={200}
+          />
+        </div>
 
         {/* K.O. / BOSS DEFEATED / QUALIFIED */}
         <h1

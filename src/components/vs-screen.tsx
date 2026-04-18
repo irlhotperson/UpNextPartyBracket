@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PlayerAvatar } from "./player-avatar";
 
 interface VSScreenProps {
-  playerA: { display_name: string; avatar_emoji: string } | null;
-  playerB: { display_name: string; avatar_emoji: string } | null;
+  playerA: { display_name: string; avatar_emoji: string; avatar_photo_url?: string | null } | null;
+  playerB: { display_name: string; avatar_emoji: string; avatar_photo_url?: string | null } | null;
   stationLabel: string;
   onDismiss: () => void;
 }
@@ -16,6 +17,11 @@ export function VSScreen({
   onDismiss,
 }: VSScreenProps) {
   const [phase, setPhase] = useState<"slide" | "vs" | "fight">("slide");
+  const [avatarSize, setAvatarSize] = useState(200);
+
+  useEffect(() => {
+    setAvatarSize(window.innerWidth > 640 ? 320 : 200);
+  }, []);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase("vs"), 800);
@@ -51,20 +57,22 @@ export function VSScreen({
 
       {/* Player A — left side */}
       <div
-        className={`absolute left-0 top-1/2 -translate-y-1/2 w-2/5 text-center transition-transform duration-300 ${
+        className={`absolute left-0 top-1/2 -translate-y-1/2 w-2/5 flex flex-col items-center transition-transform duration-300 ${
           phase === "slide" ? "-translate-x-full" : "translate-x-0"
         }`}
         style={{ transitionTimingFunction: "steps(5)" }}
       >
-        <p
-          className="text-8xl sm:text-9xl mb-4"
-          style={{
-            imageRendering: "pixelated",
-            filter: "drop-shadow(0 0 20px rgba(26,109,255,0.5))",
-          }}
+        <div
+          className="mb-4"
+          style={{ filter: "drop-shadow(0 0 20px rgba(26,109,255,0.5))" }}
         >
-          {playerA?.avatar_emoji || "?"}
-        </p>
+          <PlayerAvatar
+            emoji={playerA?.avatar_emoji || "?"}
+            photoUrl={playerA?.avatar_photo_url}
+            name={playerA?.display_name}
+            size={avatarSize}
+          />
+        </div>
         <p
           className="pixel-text font-heading text-arcade-yellow text-xs sm:text-sm"
           style={{ textShadow: "0 0 10px rgba(255,215,0,0.5), 2px 2px 0 #000" }}
@@ -92,20 +100,22 @@ export function VSScreen({
 
       {/* Player B — right side */}
       <div
-        className={`absolute right-0 top-1/2 -translate-y-1/2 w-2/5 text-center transition-transform duration-300 ${
+        className={`absolute right-0 top-1/2 -translate-y-1/2 w-2/5 flex flex-col items-center transition-transform duration-300 ${
           phase === "slide" ? "translate-x-full" : "translate-x-0"
         }`}
         style={{ transitionTimingFunction: "steps(5)" }}
       >
-        <p
-          className="text-8xl sm:text-9xl mb-4"
-          style={{
-            imageRendering: "pixelated",
-            filter: "drop-shadow(0 0 20px rgba(255,45,155,0.5))",
-          }}
+        <div
+          className="mb-4"
+          style={{ filter: "drop-shadow(0 0 20px rgba(255,45,155,0.5))" }}
         >
-          {playerB?.avatar_emoji || "?"}
-        </p>
+          <PlayerAvatar
+            emoji={playerB?.avatar_emoji || "?"}
+            photoUrl={playerB?.avatar_photo_url}
+            name={playerB?.display_name}
+            size={avatarSize}
+          />
+        </div>
         <p
           className="pixel-text font-heading text-arcade-magenta text-xs sm:text-sm"
           style={{

@@ -23,6 +23,7 @@ export interface Player {
   party_id: string;
   display_name: string;
   avatar_emoji: string;
+  avatar_photo_url: string | null;
   session_token: string;
   joined_at: string;
 }

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import imageCompression from "browser-image-compression";
+import { PlayerAvatar } from "@/components/player-avatar";
 import type { Player, Match, Badge, EventEntry, Event } from "@/lib/types";
 
 interface LobbyData {
   player: Player;
   entries: (EventEntry & { events: Event })[];
   matches: (Match & { events: Event })[];
-  opponents: Record<string, { display_name: string; avatar_emoji: string }>;
+  opponents: Record<string, { display_name: string; avatar_emoji: string; avatar_photo_url?: string | null }>;
   badges: Badge[];
 }
 
@@ -83,6 +85,7 @@ export default function LobbyPage() {
   const [data, setData] = useState<LobbyData | null>(null);
   const [reporting, setReporting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/players/lobby");
@@ -91,6 +94,29 @@ export default function LobbyPage() {
     }
     setLoading(false);
   }, []);
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !data) return;
+    try {
+      const compressed = await imageCompression(file, {
+        maxWidthOrHeight: 400,
+        maxSizeMB: 0.1,
+        fileType: "image/jpeg",
+        useWebWorker: true,
+      });
+      const formData = new FormData();
+      formData.append("photo", compressed);
+      await fetch(`/api/players/${data.player.id}/photo`, {
+        method: "POST",
+        body: formData,
+      });
+      fetchData();
+    } catch {
+      // ignore
+    }
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
 
   useEffect(() => {
     fetchData();
@@ -151,8 +177,28 @@ export default function LobbyPage() {
     <div className="flex flex-1 flex-col bg-arcade-dark px-4 py-6">
       <div className="max-w-sm mx-auto w-full">
         {/* Player header */}
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          onChange={handlePhotoChange}
+          className="hidden"
+        />
         <div className="text-center mb-6">
-          <p className="text-5xl mb-2">{player.avatar_emoji}</p>
+          <div className="flex justify-center mb-2">
+            <PlayerAvatar
+              emoji={player.avatar_emoji}
+              photoUrl={player.avatar_photo_url}
+              name={player.display_name}
+              size={80}
+              onClick={() => photoInputRef.current?.click()}
+              className="cursor-pointer"
+            />
+          </div>
+          <p className="pixel-text font-sans text-arcade-border text-[10px] mb-1">
+            tap photo to change
+          </p>
           <h1
             className="pixel-text font-heading text-arcade-yellow text-sm"
             style={{ textShadow: "0 0 10px rgba(255,215,0,0.5), 2px 2px 0 #000" }}

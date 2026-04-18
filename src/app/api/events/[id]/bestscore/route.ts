@@ -166,13 +166,13 @@ export async function GET(
   if (playerIds.length > 0) {
     const { data: playerData } = await supabase
       .from("players")
-      .select("id, display_name, avatar_emoji")
+      .select("id, display_name, avatar_emoji, avatar_photo_url")
       .in("id", playerIds);
     if (playerData) {
       players = Object.fromEntries(
         playerData.map((p) => [
           p.id,
-          { display_name: p.display_name, avatar_emoji: p.avatar_emoji },
+          { display_name: p.display_name, avatar_emoji: p.avatar_emoji, avatar_photo_url: p.avatar_photo_url },
         ])
       );
     }

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
+import imageCompression from "browser-image-compression";
+import { PlayerAvatar } from "@/components/player-avatar";
 import type { Party, Event } from "@/lib/types";
 
 const AVATAR_EMOJIS = [
@@ -11,7 +13,7 @@ const AVATAR_EMOJIS = [
   "🚀", "⚔️", "🛡️", "🗡️", "🔱", "🎪", "🌪️", "☄️",
 ];
 
-type Step = "name" | "avatar" | "events" | "ready";
+type Step = "name" | "avatar" | "photo" | "events" | "ready";
 
 export default function JoinPage({
   params,
@@ -25,20 +27,21 @@ export default function JoinPage({
   const [step, setStep] = useState<Step>("name");
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showReady, setShowReady] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check if already joined
     fetch("/api/players").then(async (res) => {
       if (res.ok) {
         router.push("/lobby");
-        return;
       }
     });
 
-    // Fetch party and events
     Promise.all([
       fetch(`/api/parties/${partyId}`),
       fetch(`/api/events?party_id=${partyId}`),
@@ -60,6 +63,26 @@ export default function JoinPage({
     );
   }
 
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressed = await imageCompression(file, {
+        maxWidthOrHeight: 400,
+        maxSizeMB: 0.1,
+        fileType: "image/jpeg",
+        useWebWorker: true,
+      });
+      setPhotoFile(compressed);
+      setPhotoPreview(URL.createObjectURL(compressed));
+    } catch {
+      // Fallback: use original
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  }
+
   async function handleSubmit() {
     setSubmitting(true);
     const res = await fetch("/api/players", {
@@ -74,6 +97,20 @@ export default function JoinPage({
     });
 
     if (res.ok) {
+      const player = await res.json();
+
+      // Upload photo if one was selected
+      if (photoFile) {
+        setUploadingPhoto(true);
+        const formData = new FormData();
+        formData.append("photo", photoFile);
+        await fetch(`/api/players/${player.id}/photo`, {
+          method: "POST",
+          body: formData,
+        });
+        setUploadingPhoto(false);
+      }
+
       setShowReady(true);
       setTimeout(() => router.push("/lobby"), 2000);
     } else {
@@ -85,7 +122,17 @@ export default function JoinPage({
     return (
       <div className="flex flex-1 flex-col items-center justify-center bg-arcade-dark">
         <div className="text-center screen-shake">
-          <p className="text-7xl mb-4">{avatar}</p>
+          {photoPreview ? (
+            <PlayerAvatar
+              emoji={avatar}
+              photoUrl={photoPreview}
+              name={name}
+              size={96}
+              className="mx-auto mb-4"
+            />
+          ) : (
+            <p className="text-7xl mb-4">{avatar}</p>
+          )}
           <h1
             className="pixel-text font-heading text-arcade-green text-lg arcade-flash"
             style={{
@@ -168,7 +215,6 @@ export default function JoinPage({
               CHOOSE YOUR FIGHTER
             </label>
 
-            {/* Selected avatar preview */}
             {avatar && (
               <div className="text-center">
                 <span
@@ -182,7 +228,6 @@ export default function JoinPage({
               </div>
             )}
 
-            {/* Emoji grid - SF2 character select style */}
             <div
               className="grid grid-cols-8 gap-1 p-2 border-2 border-arcade-blue bg-arcade-navy"
               style={{
@@ -213,7 +258,7 @@ export default function JoinPage({
                 ← BACK
               </button>
               <button
-                onClick={() => setStep("events")}
+                onClick={() => setStep("photo")}
                 disabled={!avatar}
                 className="border-2 border-arcade-yellow bg-arcade-yellow/20 px-4 py-3 font-heading text-xs text-arcade-yellow hover:bg-arcade-yellow/40 disabled:opacity-40 pixel-text flex-1"
               >
@@ -223,7 +268,76 @@ export default function JoinPage({
           </div>
         )}
 
-        {/* Step 3: Event selection */}
+        {/* Step 3: Photo (optional) */}
+        {step === "photo" && (
+          <div className="flex flex-col gap-4">
+            <label className="pixel-text font-heading text-arcade-magenta text-xs text-center">
+              ADD YOUR PIC
+            </label>
+
+            <p className="pixel-text font-sans text-arcade-border text-sm text-center">
+              Add a pic so people know who you are.
+              <br />
+              Or don&apos;t — we&apos;ll just use your emoji.
+            </p>
+
+            {/* Photo preview */}
+            <div className="flex justify-center">
+              {photoPreview ? (
+                <PlayerAvatar
+                  emoji={avatar}
+                  photoUrl={photoPreview}
+                  name={name}
+                  size={120}
+                />
+              ) : (
+                <span
+                  className="text-7xl"
+                  style={{
+                    filter: "drop-shadow(0 0 12px rgba(255,215,0,0.5))",
+                  }}
+                >
+                  {avatar}
+                </span>
+              )}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              onChange={handlePhotoSelect}
+              className="hidden"
+            />
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-arcade-cyan bg-arcade-cyan/20 px-4 py-3 font-heading text-xs text-arcade-cyan hover:bg-arcade-cyan/40 pixel-text"
+              >
+                {photoPreview ? "RETAKE PHOTO" : "TAKE PHOTO"}
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStep("avatar")}
+                className="border border-arcade-border px-4 py-3 font-heading text-xs text-arcade-border hover:text-foreground pixel-text flex-1"
+              >
+                ← BACK
+              </button>
+              <button
+                onClick={() => setStep("events")}
+                className="border-2 border-arcade-yellow bg-arcade-yellow/20 px-4 py-3 font-heading text-xs text-arcade-yellow hover:bg-arcade-yellow/40 pixel-text flex-1"
+              >
+                {photoPreview ? "NEXT →" : "SKIP →"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Event selection */}
         {step === "events" && (
           <div className="flex flex-col gap-4">
             <label className="pixel-text font-heading text-arcade-magenta text-xs text-center">
@@ -268,7 +382,7 @@ export default function JoinPage({
 
             <div className="flex gap-2">
               <button
-                onClick={() => setStep("avatar")}
+                onClick={() => setStep("photo")}
                 className="border border-arcade-border px-4 py-3 font-heading text-xs text-arcade-border hover:text-foreground pixel-text flex-1"
               >
                 ← BACK
@@ -278,7 +392,11 @@ export default function JoinPage({
                 disabled={submitting || selectedEvents.length === 0}
                 className="border-2 border-arcade-green bg-arcade-green/20 px-4 py-3 font-heading text-xs text-arcade-green hover:bg-arcade-green/40 disabled:opacity-40 pixel-text flex-1"
               >
-                {submitting ? "JOINING..." : "JOIN PARTY"}
+                {submitting
+                  ? uploadingPhoto
+                    ? "UPLOADING..."
+                    : "JOINING..."
+                  : "JOIN PARTY"}
               </button>
             </div>
           </div>
