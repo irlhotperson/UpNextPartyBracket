@@ -23,32 +23,25 @@ export function Watermark({
   return (
     <div
       className={`fixed z-40 pointer-events-none ${positionClasses}`}
-      style={{ opacity }}
+      style={{ opacity, mixBlendMode: "screen" }}
     >
       <div
-        className="relative overflow-hidden"
-        style={{
-          width: size,
-          height: size,
-          border: `2px solid rgba(255,215,0,${opacity * 0.6})`,
-          mixBlendMode: "screen",
-        }}
+        className="relative"
+        style={{ width: size, height: size }}
       >
-        {/* Logo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/irlhotperson-logo.png"
           alt=""
-          className="w-full h-full object-cover"
-          style={{ filter: "saturate(0.7) brightness(1.2)" }}
+          className="w-full h-full object-contain"
+          style={{ filter: "saturate(0.7) brightness(1.3)" }}
         />
         {/* Scanline overlay on the logo itself */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 rounded-full"
           style={{
             background:
-              "repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px)",
-            mixBlendMode: "multiply",
+              "repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 3px)",
           }}
         />
       </div>
