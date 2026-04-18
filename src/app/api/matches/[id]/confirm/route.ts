@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
-import { advanceWinner } from "@/lib/match-utils";
+import { advanceWinner, handleBossModeCompletion } from "@/lib/match-utils";
 
 export async function POST(
   _request: Request,
@@ -76,8 +76,9 @@ export async function POST(
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // Advance winner in bracket
+  // Advance winner in bracket (single_elim) or handle boss mode
   await advanceWinner(supabase, data);
+  await handleBossModeCompletion(supabase, data);
 
   return Response.json(data);
 }

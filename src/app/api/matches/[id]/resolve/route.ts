@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { isAdminAuthenticated } from "@/lib/admin";
-import { advanceWinner } from "@/lib/match-utils";
+import { advanceWinner, handleBossModeCompletion } from "@/lib/match-utils";
 
 // Admin override: resolve any match by picking a winner
 export async function POST(
@@ -35,8 +35,9 @@ export async function POST(
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // Advance winner
+  // Advance winner / handle boss mode
   await advanceWinner(supabase, data);
+  await handleBossModeCompletion(supabase, data);
 
   return Response.json(data);
 }
