@@ -15,13 +15,15 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   const [captured, setCaptured] = useState<string | null>(null);
   const [flashing, setFlashing] = useState(false);
   const [cameraError, setCameraError] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [started, setStarted] = useState(false);
   const fallbackInputRef = useRef<HTMLInputElement>(null);
 
   const startCamera = useCallback(async (facing: "user" | "environment") => {
-    // Stop existing stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
     }
+    setCameraReady(false);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -31,7 +33,9 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
+      setStarted(true);
     } catch {
       setCameraError(true);
     }
@@ -45,7 +49,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
     };
   }, []);
 
-  // Start camera on user gesture (button click calls this)
   function handleStartCamera() {
     startCamera(facingMode);
   }
@@ -56,17 +59,23 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
     startCamera(newMode);
   }
 
+  function handleVideoReady() {
+    setCameraReady(true);
+  }
+
   function handleSnap() {
     if (!videoRef.current || !canvasRef.current) return;
 
-    // Flash effect
+    const video = videoRef.current;
+
+    // Guard: don't snap if video has no dimensions yet
+    if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+    // Flash
     setFlashing(true);
     setTimeout(() => setFlashing(false), 150);
 
-    const video = videoRef.current;
     const canvas = canvasRef.current;
-
-    // Crop to square from center
     const size = Math.min(video.videoWidth, video.videoHeight);
     const offsetX = (video.videoWidth - size) / 2;
     const offsetY = (video.videoHeight - size) / 2;
@@ -79,7 +88,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
     const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
     setCaptured(dataUrl);
 
-    // Stop camera while reviewing
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
     }
@@ -104,7 +112,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
     );
   }
 
-  // Fallback file input handler
   function handleFallbackFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) onCapture(file);
@@ -148,7 +155,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   if (captured) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-arcade-dark">
-        {/* Red vignette */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -157,7 +163,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
           }}
         />
 
-        {/* Photo preview */}
         <div
           className="relative"
           style={{
@@ -173,7 +178,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
           />
         </div>
 
-        {/* Buttons */}
         <div className="flex flex-col gap-3 mt-8 w-64 sm:w-80">
           <button
             onClick={handleUse}
@@ -193,7 +197,6 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
           </button>
         </div>
 
-        {/* Scanlines */}
         <div className="scanlines" />
         <canvas ref={canvasRef} className="hidden" />
       </div>
@@ -203,14 +206,14 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   // Camera view
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
-      {/* Video feed */}
+      {/* Video feed — always in DOM so ref works */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        onLoadedMetadata={() => videoRef.current?.play()}
-        className="absolute inset-0 w-full h-full object-cover"
+        onLoadedData={handleVideoReady}
+        className={`absolute inset-0 w-full h-full object-cover ${started ? "" : "invisible"}`}
         style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
       />
 
@@ -224,34 +227,38 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
       />
 
       {/* "READY?" text */}
-      <div className="absolute top-12 left-0 right-0 text-center z-10">
-        <p
-          className="pixel-text font-heading text-arcade-yellow text-sm arcade-flash"
-          style={{
-            textShadow: "0 0 10px rgba(255,215,0,0.6), 2px 2px 0 #000",
-          }}
-        >
-          READY?
-        </p>
-      </div>
+      {cameraReady && (
+        <div className="absolute top-12 left-0 right-0 text-center z-10">
+          <p
+            className="pixel-text font-heading text-arcade-yellow text-sm arcade-flash"
+            style={{
+              textShadow: "0 0 10px rgba(255,215,0,0.6), 2px 2px 0 #000",
+            }}
+          >
+            READY?
+          </p>
+        </div>
+      )}
 
       {/* Square frame guide */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-        <div
-          className="w-64 h-64 sm:w-80 sm:h-80"
-          style={{
-            border: "6px solid rgba(255,215,0,0.6)",
-            boxShadow:
-              "0 0 20px rgba(255,215,0,0.2), inset 0 0 20px rgba(0,0,0,0.3)",
-          }}
-        >
-          {/* Magenta corner brackets */}
-          <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-arcade-magenta" />
-          <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-arcade-magenta" />
-          <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-arcade-magenta" />
-          <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-arcade-magenta" />
+      {cameraReady && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div
+            className="relative w-64 h-64 sm:w-80 sm:h-80"
+            style={{
+              border: "6px solid rgba(255,215,0,0.6)",
+              boxShadow:
+                "0 0 20px rgba(255,215,0,0.2), inset 0 0 20px rgba(0,0,0,0.3)",
+            }}
+          >
+            {/* Magenta corner brackets */}
+            <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-arcade-magenta" />
+            <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-arcade-magenta" />
+            <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-arcade-magenta" />
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-arcade-magenta" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Flash overlay */}
       {flashing && (
@@ -267,15 +274,17 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
       </button>
 
       {/* Flip camera button */}
-      <button
-        onClick={handleFlip}
-        className="absolute top-4 left-4 z-20 px-3 py-2 border-2 border-arcade-border bg-arcade-dark/80 font-heading text-[10px] text-arcade-border hover:text-foreground pixel-text"
-      >
-        FLIP
-      </button>
+      {cameraReady && (
+        <button
+          onClick={handleFlip}
+          className="absolute top-4 left-4 z-20 px-3 py-2 border-2 border-arcade-border bg-arcade-dark/80 font-heading text-[10px] text-arcade-border hover:text-foreground pixel-text"
+        >
+          FLIP
+        </button>
+      )}
 
-      {/* Start camera button (shown initially before stream starts) */}
-      {!streamRef.current && !cameraError && (
+      {/* Start camera button — shown before stream starts */}
+      {!started && (
         <button
           onClick={handleStartCamera}
           className="relative z-20 border-2 border-arcade-yellow bg-arcade-yellow/20 px-8 py-4 font-heading text-sm text-arcade-yellow hover:bg-arcade-yellow/40 pixel-text"
@@ -287,19 +296,21 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
         </button>
       )}
 
-      {/* SNAP button */}
-      <div className="absolute bottom-12 left-0 right-0 flex justify-center z-20">
-        <button
-          onClick={handleSnap}
-          className="border-4 border-arcade-yellow bg-arcade-dark/80 px-10 py-4 font-heading text-base text-arcade-yellow hover:bg-arcade-yellow/30 active:translate-y-1 pixel-text transition-transform"
-          style={{
-            boxShadow:
-              "0 0 20px rgba(255,215,0,0.4), 6px 6px 0 #ff2d9b",
-          }}
-        >
-          SNAP
-        </button>
-      </div>
+      {/* SNAP button — only when camera is ready */}
+      {cameraReady && (
+        <div className="absolute bottom-12 left-0 right-0 flex justify-center z-20">
+          <button
+            onClick={handleSnap}
+            className="border-4 border-arcade-yellow bg-arcade-dark/80 px-10 py-4 font-heading text-base text-arcade-yellow hover:bg-arcade-yellow/30 active:translate-y-1 pixel-text transition-transform"
+            style={{
+              boxShadow:
+                "0 0 20px rgba(255,215,0,0.4), 6px 6px 0 #ff2d9b",
+            }}
+          >
+            SNAP
+          </button>
+        </div>
+      )}
 
       {/* Scanlines */}
       <div className="scanlines" />
