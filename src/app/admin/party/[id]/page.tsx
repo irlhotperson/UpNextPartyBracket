@@ -61,6 +61,10 @@ export default function PartyManagePage({
   );
   const [creating, setCreating] = useState(false);
 
+  // Party rename state
+  const [editingPartyName, setEditingPartyName] = useState(false);
+  const [partyNameDraft, setPartyNameDraft] = useState("");
+
   // Edit form state
   const [editName, setEditName] = useState("");
   const [editStation, setEditStation] = useState("");
@@ -145,6 +149,21 @@ export default function PartyManagePage({
     setSaving(false);
   }
 
+  async function renameParty() {
+    const trimmed = partyNameDraft.trim();
+    if (!trimmed || trimmed === party?.name) {
+      setEditingPartyName(false);
+      return;
+    }
+    await fetch(`/api/parties/${partyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    setEditingPartyName(false);
+    fetchData();
+  }
+
   async function updateEventStatus(eventId: string, status: string) {
     await fetch(`/api/events/${eventId}`, {
       method: "PATCH",
@@ -206,14 +225,37 @@ export default function PartyManagePage({
       <div className="max-w-2xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <h1
-            className="pixel-text font-heading text-arcade-yellow text-sm"
-            style={{
-              textShadow: "0 0 10px rgba(255,215,0,0.5), 2px 2px 0 #000",
-            }}
-          >
-            {party.name}
-          </h1>
+          {editingPartyName ? (
+            <input
+              type="text"
+              value={partyNameDraft}
+              onChange={(e) => setPartyNameDraft(e.target.value)}
+              onBlur={renameParty}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") renameParty();
+                if (e.key === "Escape") setEditingPartyName(false);
+              }}
+              autoFocus
+              className="bg-transparent border-b-2 border-arcade-yellow px-1 py-0 font-heading text-sm text-arcade-yellow focus:outline-none pixel-text"
+              style={{
+                textShadow: "0 0 10px rgba(255,215,0,0.5), 2px 2px 0 #000",
+              }}
+            />
+          ) : (
+            <h1
+              className="pixel-text font-heading text-arcade-yellow text-sm cursor-pointer hover:underline"
+              style={{
+                textShadow: "0 0 10px rgba(255,215,0,0.5), 2px 2px 0 #000",
+              }}
+              onClick={() => {
+                setPartyNameDraft(party.name);
+                setEditingPartyName(true);
+              }}
+              title="Click to rename"
+            >
+              {party.name}
+            </h1>
+          )}
           <Link
             href="/admin/parties"
             className="pixel-text font-heading text-arcade-cyan text-xs hover:text-arcade-blue"
