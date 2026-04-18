@@ -51,6 +51,11 @@ async function captureFrame(
   );
 }
 
+function isMobile(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
 export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -62,6 +67,40 @@ export function ArcadeCamera({ onCapture, onCancel }: ArcadeCameraProps) {
   const [cameraReady, setCameraReady] = useState(false);
   const [started, setStarted] = useState(false);
   const fallbackRef = useRef<HTMLInputElement>(null);
+
+  // Desktop: skip custom camera, go straight to file input
+  if (!isMobile()) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-arcade-dark px-4">
+        <p className="pixel-text font-heading text-arcade-yellow text-xs mb-4">
+          TAKE YOUR SHOT
+        </p>
+        <input
+          ref={fallbackRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onCapture(f);
+          }}
+          className="hidden"
+        />
+        <button
+          onClick={() => fallbackRef.current?.click()}
+          className="border-2 border-arcade-cyan bg-arcade-cyan/20 px-6 py-3 font-heading text-xs text-arcade-cyan hover:bg-arcade-cyan/40 pixel-text mb-3"
+        >
+          CHOOSE PHOTO
+        </button>
+        <button
+          onClick={onCancel}
+          className="pixel-text font-heading text-arcade-border text-xs hover:text-foreground"
+        >
+          CANCEL
+        </button>
+        <div className="scanlines" />
+      </div>
+    );
+  }
 
   const stopStream = useCallback(() => {
     if (streamRef.current) {
