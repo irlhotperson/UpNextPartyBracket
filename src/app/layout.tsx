@@ -16,7 +16,39 @@ const vt323 = VT323({
 
 export const metadata: Metadata = {
   title: "UpNext | Party Bracket",
-  description: "Multi-event tournament party app. Who's up next?",
+  description:
+    "Turn your house party into a tournament. QR to join, live brackets on the TV.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  },
+  manifest: "/manifest.json",
+  openGraph: {
+    title: "UpNext: Party Bracket",
+    description:
+      "Turn your house party into a tournament. QR to join, live brackets on the TV.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "UpNext: Party Bracket — UP NEXT in arcade yellow on dark background",
+      },
+    ],
+    type: "website",
+    siteName: "UpNext",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "UpNext: Party Bracket",
+    description:
+      "Turn your house party into a tournament. QR to join, live brackets on the TV.",
+    images: ["/og-image.png"],
+  },
 };
 
 export const viewport: Viewport = {
