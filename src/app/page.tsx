@@ -1,3 +1,5 @@
+import { Watermark } from "@/components/watermark";
+
 export default function SplashPage() {
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-arcade-dark">
@@ -70,6 +72,8 @@ export default function SplashPage() {
       <div className="absolute top-4 right-4 h-8 w-8 border-t-2 border-r-2 border-arcade-blue opacity-50" />
       <div className="absolute bottom-4 left-4 h-8 w-8 border-b-2 border-l-2 border-arcade-blue opacity-50" />
       <div className="absolute bottom-4 right-4 h-8 w-8 border-b-2 border-r-2 border-arcade-blue opacity-50" />
+
+      <Watermark position="bottom-center" size={50} opacity={0.2} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Watermark } from "@/components/watermark";
 
 export default function AdminDashboard() {
   return (
@@ -24,6 +25,8 @@ export default function AdminDashboard() {
           MANAGE PARTIES
         </Link>
       </div>
+
+      <Watermark position="bottom-right" size={40} opacity={0.15} />
     </div>
   );
 }

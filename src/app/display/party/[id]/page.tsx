@@ -5,6 +5,7 @@ import { createBrowserClient } from "@/lib/supabase/client";
 import { VSScreen } from "@/components/vs-screen";
 import { KOScreen } from "@/components/ko-screen";
 import { BracketView } from "@/components/bracket-view";
+import { Watermark } from "@/components/watermark";
 import type { Event, Match, Player } from "@/lib/types";
 
 interface EventData {
@@ -301,6 +302,9 @@ export default function PartyDisplayPage({
           </div>
         ))}
       </div>
+
+      {/* Watermark — hidden during takeovers */}
+      {!takeover && <Watermark position="bottom-right" size={65} opacity={0.25} />}
 
       {/* Scanlines */}
       <div className="scanlines" />

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import imageCompression from "browser-image-compression";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { ArcadeCamera } from "@/components/arcade-camera";
+import { Watermark } from "@/components/watermark";
 import type { Player, Match, Badge, EventEntry, Event } from "@/lib/types";
 
 interface LobbyData {
@@ -391,6 +392,8 @@ export default function LobbyPage() {
           Pull down to refresh your status
         </p>
       </div>
+
+      <Watermark position="bottom-right" size={40} opacity={0.15} />
     </div>
   );
 }
