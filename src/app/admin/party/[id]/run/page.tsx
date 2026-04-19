@@ -105,7 +105,8 @@ export default function AdminRunDashboard({
     fetchData();
   }
 
-  async function resolveMatch(matchId: string, winnerId: string) {
+  async function resolveMatch(matchId: string, winnerId: string, winnerName: string) {
+    if (!confirm(`Record ${winnerName} as the winner?`)) return;
     await fetch(`/api/matches/${matchId}/resolve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -236,7 +237,7 @@ export default function AdminRunDashboard({
               {match.player_a_id && (
                 <button
                   onClick={() =>
-                    resolveMatch(match.id, match.player_a_id!)
+                    resolveMatch(match.id, match.player_a_id!, pA?.display_name || "Player A")
                   }
                   className="flex-1 px-2 py-1.5 font-heading text-[9px] pixel-text border border-arcade-blue text-arcade-blue bg-arcade-blue/10 hover:bg-arcade-blue/30"
                 >
@@ -246,7 +247,7 @@ export default function AdminRunDashboard({
               {match.player_b_id && (
                 <button
                   onClick={() =>
-                    resolveMatch(match.id, match.player_b_id!)
+                    resolveMatch(match.id, match.player_b_id!, pB?.display_name || "Player B")
                   }
                   className="flex-1 px-2 py-1.5 font-heading text-[9px] pixel-text border border-arcade-magenta text-arcade-magenta bg-arcade-magenta/10 hover:bg-arcade-magenta/30"
                 >
