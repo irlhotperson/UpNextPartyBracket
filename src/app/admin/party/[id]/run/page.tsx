@@ -235,14 +235,14 @@ export default function AdminRunDashboard({
               <button
                 onClick={() => callMatch(match.id)}
                 disabled={!!eitherBusy}
-                className={`px-2 py-1 font-heading text-[8px] pixel-text border ${
+                className={`w-full px-3 py-2 font-heading text-[10px] pixel-text border-2 ${
                   eitherBusy
                     ? "border-arcade-border text-arcade-border cursor-not-allowed"
-                    : "border-arcade-green text-arcade-green bg-arcade-green/10 hover:bg-arcade-green/30"
+                    : "border-arcade-green text-arcade-green bg-arcade-green/20 hover:bg-arcade-green/40 arcade-flash"
                 }`}
                 title={eitherBusy ? "Player busy at another station" : ""}
               >
-                CALL MATCH
+                {eitherBusy ? "PLAYER BUSY" : "FORCE START"}
               </button>
             )}
 
