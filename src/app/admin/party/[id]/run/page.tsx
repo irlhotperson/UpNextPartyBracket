@@ -229,35 +229,18 @@ export default function AdminRunDashboard({
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-1 mt-2">
-          {match.status === "pending" &&
+          {match.status !== "completed" &&
             match.player_a_id &&
             match.player_b_id && (
-              <button
-                onClick={() => callMatch(match.id)}
-                disabled={!!eitherBusy}
-                className={`w-full px-3 py-2 font-heading text-[10px] pixel-text border-2 ${
-                  eitherBusy
-                    ? "border-arcade-border text-arcade-border cursor-not-allowed"
-                    : "border-arcade-green text-arcade-green bg-arcade-green/20 hover:bg-arcade-green/40 arcade-flash"
-                }`}
-                title={eitherBusy ? "Player busy at another station" : ""}
-              >
-                {eitherBusy ? "PLAYER BUSY" : "FORCE START"}
-              </button>
-            )}
-
-          {(match.status === "in_progress" ||
-            match.status === "pending_confirmation" ||
-            match.status === "disputed") && (
             <>
               {match.player_a_id && (
                 <button
                   onClick={() =>
                     resolveMatch(match.id, match.player_a_id!)
                   }
-                  className="px-2 py-1 font-heading text-[8px] pixel-text border border-arcade-blue text-arcade-blue bg-arcade-blue/10 hover:bg-arcade-blue/30"
+                  className="flex-1 px-2 py-1.5 font-heading text-[9px] pixel-text border border-arcade-blue text-arcade-blue bg-arcade-blue/10 hover:bg-arcade-blue/30"
                 >
-                  {pA?.display_name} WINS
+                  {pA?.avatar_emoji} {pA?.display_name} WINS
                 </button>
               )}
               {match.player_b_id && (
@@ -265,9 +248,9 @@ export default function AdminRunDashboard({
                   onClick={() =>
                     resolveMatch(match.id, match.player_b_id!)
                   }
-                  className="px-2 py-1 font-heading text-[8px] pixel-text border border-arcade-magenta text-arcade-magenta bg-arcade-magenta/10 hover:bg-arcade-magenta/30"
+                  className="flex-1 px-2 py-1.5 font-heading text-[9px] pixel-text border border-arcade-magenta text-arcade-magenta bg-arcade-magenta/10 hover:bg-arcade-magenta/30"
                 >
-                  {pB?.display_name} WINS
+                  {pB?.avatar_emoji} {pB?.display_name} WINS
                 </button>
               )}
             </>
